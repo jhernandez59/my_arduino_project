@@ -1,0 +1,42 @@
+# === ESP-IDF build system ===
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+
+# === Arduino as a component (managed components) ===
+managed_components/
+
+# === ESP-IDF logs ===
+*.log
+
+# === VS Code ===
+.vscode/
+.settings/
+.idea/
+
+# === Python virtual environments ===
+venv/
+env/
+*.pyc
+__pycache__/
+
+# === Temporary files ===
+*.tmp
+*.bak
+*~
+.DS_Store
+
+# === Releases / binaries ===
+*.bin
+*.elf
+*.map
+
+# === IDF monitor crash dumps ===
+core*
+*.pcap
+
+
+
+
