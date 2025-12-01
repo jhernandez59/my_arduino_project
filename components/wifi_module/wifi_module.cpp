@@ -1,31 +1,27 @@
 #include "wifi_module.h"
+#include <WiFi.h>
 
-void wifi_init(const char* ssid, const char* password) {
+bool wifi_connect(const char* ssid, const char* pass) {
+    WiFi.mode(WIFI_STA);     // <--- IMPORTANTE
+    WiFi.disconnect(true);   // Limpia estados previos
+    delay(100);
 
-    Serial.println("🔌 Iniciando WiFi...");
+    WiFi.begin(ssid, pass);
 
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
-
-    int intentos = 0;
-
-    while (WiFi.status() != WL_CONNECTED && intentos < 20) {
-        delay(500);
-        Serial.print(".");
-        intentos++;
+    unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < 8000) {
+        delay(200);
     }
 
-    Serial.println();
-
-    if (WiFi.status() == WL_CONNECTED) {
-        Serial.println("✅ WiFi conectado");
-        Serial.print("IP: ");
-        Serial.println(WiFi.localIP());
-    } else {
-        Serial.println("❌ No se pudo conectar al WiFi");
-    }
+    return WiFi.status() == WL_CONNECTED;
 }
 
 bool wifi_is_connected() {
     return WiFi.status() == WL_CONNECTED;
 }
+
+void wifi_disconnect() {
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);   // <--- Para evitar errores de driver
+}
+

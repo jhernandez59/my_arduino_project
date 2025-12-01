@@ -1,52 +1,56 @@
-#include "Arduino.h"       // ⭐ Integración Arduino
-#include "../components/wifi_module/wifi_module.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_log.h"
+#include <Arduino.h>
+#include <nvs_flash.h>
 
-static const char *TAG = "ARDUINO_APP";
+#include "wifi_manager.h"
 
-extern "C" void app_main(void);
+static const char* TAG = "MAIN";
 
-/**
- * Tarea principal que maneja la lógica que antes estaba en setup() y loop().
- */
-void main_app_task(void *pvParameters) {
+void setup() {
+    Serial.begin(115200);
+    delay(500);
 
-    Serial.begin(115200);   // Inicializa puerto serial
-    ESP_LOGI(TAG, "Iniciando lógica de la aplicación...");
+    Serial.println("\n==============================");
+    Serial.println(" 🔧 Iniciando sistema principal");
+    Serial.println("==============================\n");
 
-    wifi_init("WIFI_SSID", "WIFI_PASS");
+    // -------------------------------------------------------
+    // 1) Inicializar NVS
+    // -------------------------------------------------------
+    Serial.println("⚙ Inicializando NVS...");
 
-    while (true) {
-
-        if (wifi_is_connected()) {
-            Serial.println("📡 WiFi conectado");
-        } else {
-            Serial.println("🔄 WiFi desconectado, reintentando...");
-             wifi_init("WIFI_SSID", "WIFI_PASS");
-        }
-
-        vTaskDelay(pdMS_TO_TICKS(2000));
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES ||
+        ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
+        Serial.println("⚠ Se requiere borrar NVS, corrigiendo...");
+        nvs_flash_erase();
+        nvs_flash_init();
     }
+    Serial.println("✔ NVS inicializado correctamente\n");
+
+    // -------------------------------------------------------
+    // 2) Iniciar WiFi Manager
+    // -------------------------------------------------------
+    wifi_manager_start();
+
+    Serial.println("\n📡 WiFi Manager iniciado\n");
 }
 
-// 👉 Punto de entrada para ESP-IDF
-extern "C" void app_main(void) {
-    // 🔰 Inicializamos Arduino 
-    // (necesario para usar las funciones de Arduino como Serial, digitalWrite, etc.)
-    initArduino();
+void loop() {
+    wifi_manager_loop();
+    delay(10);  // evita bloquear el sistema
+}
 
-    // 🧵 Creamos la tarea principal que contiene toda la lógica
-    xTaskCreatePinnedToCore(
-        main_app_task,
-        "main_app_task",
-        4096,      // Tamaño de stack
-        NULL,
-        1,         // Prioridad
-        NULL,
-        0          // Núcleo (0)
-    );
+// -----------------------------------------------------------
+// 🔥 ESP-IDF requiere obligatoriamente esta función
+// -----------------------------------------------------------
+extern "C" void app_main() {
+    initArduino();  // Inicializa el entorno Arduino dentro de ESP-IDF
 
-    
+    setup();
+
+    while (true) {
+        loop();
+        vTaskDelay(1);  // cede tiempo al scheduler FreeRTOS
+    }
 }
